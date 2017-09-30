@@ -1,5 +1,6 @@
 from sklearn.utils import shuffle
 import numpy as np
+import os
 
 import librosa
 
@@ -23,17 +24,18 @@ class DatasetLoader(object):
 
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
-		dataset_file = dir_path + '/' + file
+		dataset_file = dir_path + '/dataset/' + file
 		self.__preprocessed_X_file = dir_path + '/' + preprocessed_X_file
-		self.__preprocessed_y_file = dir_path + '/' + __preprocessed_y_file
+		self.__preprocessed_y_file = dir_path + '/' + preprocessed_y_file
+		print(self.__preprocessed_X_file)
+		print(self.__preprocessed_y_file)
 
-		if os.path.isfile(self.__preprocessed_X_file) 
-			and os.path.isfile(self.__preprocessed_y_file)
-			and csv==False:
+		if os.path.isfile(self.__preprocessed_X_file) and os.path.isfile(self.__preprocessed_y_file) and csv==False:
 
 			processed_X, processed_y = self.__load_preprocessed_data(self.__preprocessed_X_file,
 																	 self.__preprocessed_y_file)
 		elif os.path.isfile(dataset_file):
+
 			try:
 				data_frame = pd.read_csv(dataset_file)
 			except:
@@ -45,6 +47,8 @@ class DatasetLoader(object):
 			processed_X, processed_y = self.__preprocess_dataset(data_frame)	
 
 		else:
+			print("***********************")
+			print(dataset_file)
 			raise ValueError('Dataset file doesnt exist')
 
 		self.__dataset = Dataset(processed_X, processed_y, train_percentage=train_percentage,	
@@ -157,8 +161,8 @@ class Dataset(object):
 						validation_percentage, test_percentage):
 
 			trainRange = int(len(X) * train_percentage)
-			validRange = int(len(X) * validation_percentage)
-			testRange = int(len(X) * test_percentage)
+			validRange = int(len(X) * (validation_percentage + train_percentage))
+			testRange = int(len(X) * train_percentage)
 
 			self.__X_train = np.array(X[:trainRange], dtype=np.float)
 			self.__y_train = np.array(y[:trainRange], dtype=np.float)
@@ -170,7 +174,7 @@ class Dataset(object):
 			self.__y_test = np.array(y[testRange:], dtype=np.float)
 
 			self.__X_train_valid = np.array(X[trainRange:testRange], dtype=np.float)
-			self.__y_train_valid = np.array(y[testRange:testRange], dtype=np.float)
+			self.__y_train_valid = np.array(y[trainRange:testRange], dtype=np.float)
 
 	@property
 	def X_train(self):
@@ -183,14 +187,14 @@ class Dataset(object):
 	def X_valid(self):
 		return self.__X_valid
 	@property
-	def X_valid(self):
+	def y_valid(self):
 		return self.__y_valid
 
 	@property
 	def X_test(self):
 		return self.__X_test
 	@property
-	def X_test(self):
+	def y_test(self):
 		return self.__y_test
 
 	@property

@@ -12,11 +12,9 @@ import numpy as np
 import os
 import json
 import csv
+import librosa
 
-import api.AI.trained_model
-
-loader = DatasetLoader()
-dataset = loader.load_dataset()
+from .ML_models.trained_model import classifier
 
 @api_view(['POST'])
 def clear_cached_data(request):
@@ -74,9 +72,9 @@ def predict_data(request):
 	if request.method == 'POST':
 		print('Predicting data')
 		data = json.loads(request.body.decode('utf-8'))
-		sample = data['samples']
+		sample = data['sample']
 		preprocessed_sample = preprocess_sample(sample)
-		predicted_class = int(round(trained_model.clf.predict(sample)))
+		predicted_class = int(round(classifier.predict(preprocessed_sample)))
 		predicted_class_dic = {'predicted_class' : predicted_class}
 		print(predicted_class_dic)
 		return JsonResponse(predicted_class_dic)
@@ -107,7 +105,7 @@ def create_backup(request):
 	"""Create a backup of the main dataset"""
 	if request.method == 'POST':
 		data = json.loads(request.body.decode('utf-8'))
-		backup_file = data['backup_file'] #TODO: CHANGE THIS ON THE CLIENT SIDE
+		backup_file = data['backupFile'] #TODO: CHANGE THIS ON THE CLIENT SIDE
 		if (backup_file == ""):
 			raise ValidationError
 		path_backup_file = ("api//ML_models//dataset//Backup//%s.csv" % backup_file)
@@ -128,7 +126,7 @@ def use_backup_data_as_main_data(request):
 	if request.method == 'POST':
 		"""Set the informed backup dataset as the main dataset"""
 		data = json.loads(request.body.decode('utf-8'))
-		backup_file = data['backup_file'] #TODO: CHANGE THIS ON THE CLIENT SIDE
+		backup_file = data['backupFile'] #TODO: CHANGE THIS ON THE CLIENT SIDE
 		if (backup_file == ""):
 			raise ValidationError
 		path_backup_file = ("api//ML_models//dataset//Backup//%s" % backup_file)

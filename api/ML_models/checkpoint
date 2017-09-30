@@ -1,0 +1,2 @@
+model_checkpoint_path: "C:\\Users\\Denis\\Dropbox\\Github_Projects\\TCC\\TCC_app\\server_Universal_Tuner\\api\\ML_models/saved-model-final.ckpt"
+all_model_checkpoint_paths: "C:\\Users\\Denis\\Dropbox\\Github_Projects\\TCC\\TCC_app\\server_Universal_Tuner\\api\\ML_models/saved-model-final.ckpt"
