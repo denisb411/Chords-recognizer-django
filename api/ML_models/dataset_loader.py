@@ -7,13 +7,14 @@ import librosa
 
 class DatasetLoader(object):
 	def __init__(self, preprocess_type='chroma_stft', window='hamming',
-				 win_length=128, n_fft=20480, hop_length=258):
+				 cut_freq_above = 1000, win_length=128, n_fft=20480, hop_length=258):
 
 		self.__preprocess_type = preprocess_type
 		self.__window = window
 		self.__win_length = win_length
 		self.__n_fft = n_fft
 		self.__hop_lenght = hop_length
+		self.__cut_freq_above = cut_freq_above
 
 
 	def load_dataset(self, file='main_dataset.csv', csv=False,
@@ -103,6 +104,12 @@ class DatasetLoader(object):
 			processed_y = np.zeros(len(y), dtype=np.float)
 
 			for i in range(len(X)):
+				sample = np.fft.rfft(X_load[i])
+				for ii in range(len(sample)):
+					if ii < self.__cut_freq_above: #ignore frequencies greater than 2kHz
+						X_fft_new[ii] = sample[ii]
+						
+				sample = np.fft.ifft(X_fft_new)
 				row_X = librosa.core.stft(y=X[i], n_fft=self.__n_fft, 
 										 win_length=self.__win_length,
 										 window=self.__window, center=True,
@@ -123,6 +130,12 @@ class DatasetLoader(object):
 			processed_y = np.zeros(len(y), dtype=np.float)
 
 			for i in range(len(X)):
+				sample = np.fft.rfft(X_load[i])
+				for ii in range(len(sample)):
+					if ii < self.__cut_freq_above: #ignore frequencies greater than 2kHz
+						X_fft_new[ii] = sample[ii]
+						
+				sample = np.fft.ifft(X_fft_new)
 				row_X = librosa.feature.chroma_stft(y=X[i],
 											sr=44100, n_fft=self.__n_fft,
 											hop_length=self.__hop_lenght)

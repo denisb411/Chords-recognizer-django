@@ -732,8 +732,7 @@ class RandomSearchCNN(object):
 
         self.combinations = combinations
 
-
-    def fit(self, X, y, X_valid=None, y_valid=None):
+    def fit(self, X_train, y_train, X_test=None, y_test=None, X_valid=None, y_valid=None):
 
         scores = []
         print("testing", len(self.combinations), "combinations.")
@@ -741,6 +740,9 @@ class RandomSearchCNN(object):
             accuracy_rate = 0
             folds = self.k_fold
             if folds <= 1:
+                if X_test == None or y_test == None:
+                    raise ValueError("Pass the test set when using kfold = 1!")
+
                 print("Trining CNN with parameters: " + 
                         "n_hidden_layers: %d, " % (self.params['n_hidden_layers'][combination[0]]) +
                         "n_neurons: %d, " % (self.params['n_neurons'][combination[1]]) +
@@ -764,19 +766,6 @@ class RandomSearchCNN(object):
                 conv1 = self.params['conv1'][combination[7]]
                 conv2 = self.params['conv2'][combination[8]]
                 architecture = self.params['architecture'][combination[9]]
-
-                trainRange = int(len(X) * 0.85)
-                testRange = int(len(X) * 0.15)
-
-                X_train = X[:trainRange]
-                y_train = y[:trainRange]
-
-                X_test = X[:testRange]
-                y_test = y[:testRange]
-
-                print("shapes:")
-                print(X_train.shape, X_test.shape)
-                print(y_train.shape, y_test.shape)
 
                 cnn = CNNClassifier(n_hidden_layers=n_hidden_layers, n_neurons=n_neurons, 
                     optimizer_class=optimizer_class,
@@ -818,15 +807,11 @@ class RandomSearchCNN(object):
                     trainRange = int(len(X) * 0.85)
                     testRange = int(len(X) * 0.15)
 
-                    X_train = X[:trainRange]
-                    y_train = y[:trainRange]
+                    X_train_step = X_train[:trainRange]
+                    y_train_step = y_train[:trainRange]
 
-                    X_test = X[:testRange]
-                    y_test = y[:testRange]
-
-                    print("shapes:")
-                    print(X_train.shape, X_test.shape)
-                    print(y_train.shape, y_test.shape)
+                    X_test_step = X_train[:testRange]
+                    y_test_step = y_train[:testRange]
 
                     cnn = CNNClassifier(n_hidden_layers=n_hidden_layers, n_neurons=n_neurons, 
                         optimizer_class=optimizer_class,
@@ -834,8 +819,8 @@ class RandomSearchCNN(object):
                         dropout_rate=dropout_rate, activation=activation, 
                         conv1=conv1, conv2=conv2, architecture=architecture)
 
-                    cnn.fit(X_train=X_train, y_train=y_train, X_valid=X_valid, y_valid=y_valid)
-                    accuracy_rate += cnn.accuracy_score(X_test, y_test)
+                    cnn.fit(X_train=X_train_step, y_train=y_train_step, X_valid=X_valid, y_valid=y_valid)
+                    accuracy_rate += cnn.accuracy_score(X_test_step, y_test_step)
 
             final_accuracy_rate = accuracy_rate / folds
             score = {'n_hidden_layers': n_hidden_layers,
