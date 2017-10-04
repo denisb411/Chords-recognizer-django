@@ -14,13 +14,14 @@ import json
 import csv
 import librosa
 
-from .ML_models.trained_model import classifier
+from .ML_models.initial_train import classifier
+from .ML_models.tools import preprocess_sample
 
 @api_view(['POST'])
 def clear_cached_data(request):
 	if request.method == 'POST':
 		print('processing clear_cached_data')
-		f = open("api//ML_models//dataset//cachedData.csv", "w")
+		f = open("api//ML_models//dataset//cached_data.csv", "w")
 		f.truncate()
 		f.close()
 		return Response("OK")
@@ -30,9 +31,9 @@ def clear_cached_data(request):
 @api_view(['POST'])
 def clear_main_data(request):
 	if request.method == 'POST':
-		sourceFile = open('api//ML_models//dataset//MainData.csv', 'r')
+		sourceFile = open('api//ML_models//dataset//main_data.csv', 'r')
 		data = sourceFile.read()
-		f = open("api//ML_models//dataset//MainData.csv", "w")
+		f = open("api//ML_models//dataset//main_data.csv", "w")
 		f.truncate()
 		f.close()
 		return Response("OK")
@@ -45,7 +46,7 @@ def append_to_main_data (request):
 	if request.method == 'POST':
 		sourceFile = open('api//ML_models//dataset//cached_dataset.csv', 'r')
 		data = sourceFile.read()
-		with open('api//ML_models//dataset//MainData.csv', 'a') as destFile:
+		with open('api//ML_models//dataset//main_data.csv', 'a') as destFile:
 			destFile.write(data)
 		return Response("OK")
 
@@ -59,7 +60,7 @@ def append_to_cached_data(request):
 		sample = data['sample']
 		chordType = [data['chordType']]
 		sample.append(data['chordType']) 
-		with open('api//ML_models//dataset//CachedData.csv','a') as f:
+		with open('api//ML_models//dataset//cached_data.csv','a') as f:
 			writer = csv.writer(f)
 			writer.writerow((samples))
 		return Response("OK")
@@ -109,7 +110,7 @@ def create_backup(request):
 		if (backup_file == ""):
 			raise ValidationError
 		path_backup_file = ("api//ML_models//dataset//Backup//%s.csv" % backup_file)
-		main_data = open('api//ML_models//dataset//MainData.csv', 'r')
+		main_data = open('api//ML_models//dataset//main_data.csv', 'r')
 		dataset = main_dataset.read()
 		with open(path_backup_file, 'a') as f:
 			f.write(dataset)
@@ -134,12 +135,12 @@ def use_backup_data_as_main_data(request):
 		dataset = backup_dataset.read()
 
 		#First clear main_dataset
-		f = open("api//ML_models//dataset//MainData.csv", "w")
+		f = open("api//ML_models//dataset//main_data.csv", "w")
 		f.truncate()
 		f.close()
 
 		#write main_dataset with the backup dataset
-		with open('api//ML_models//dataset//MainData.csv', 'a') as f:
+		with open('api//ML_models//dataset//main_data.csv', 'a') as f:
 			f.write(dataset)
 		return Response("OK")
 
@@ -195,11 +196,3 @@ def list_backups (request):
 
 	return Response("invalid request")
 
-def preprocess_sample(sample):
-	#This preprocess has to be the same as the training!
-	sample = np.array(sample, dtype=np.float)
-	sample = librosa.feature.chroma_stft(y=sample, sr=44100, n_fft=20480, hop_length=258)
-	sample = np.atleast_3d(sample)
-	sample = np.reshape(sample,(1, 12,80))
-
-	return sample

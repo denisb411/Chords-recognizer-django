@@ -32,14 +32,15 @@ class Classifier(object):
 				X_test, y_test):
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
+		models_path = dir_path + '/saved_models'
 		if self.__trained_model_file == None:
 			self.__advance_state()
 			self.__model.fit(X_train, y_train, X_valid=X_valid, y_valid=y_valid)
-			self.__trained_model_file = dir_path + '/saved-model-final.ckpt'
+			self.__trained_model_file = models_path + '/saved-model-final.ckpt'
 			self.__model.save(self.__trained_model_file)
 		else:
 			self.__advance_state()
-			self.__trained_model_file = dir_path + '/' + self.__trained_model_file
+			self.__trained_model_file = models_path + '/' + self.__trained_model_file
 			if os.path.isfile(self.__trained_model_file + '.meta'):
 				self.__model.restore(self.__trained_model_file)
 			else:

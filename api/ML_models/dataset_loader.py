@@ -20,8 +20,8 @@ class DatasetLoader(object):
 	def load_dataset(self, file='main_dataset.csv', csv=False,
 				train_percentage=0.8, validation_percentage=0.1,
 				test_percentage=0.1,
-				preprocessed_X_file='preprocessedSamples_X_samples_allGuitar_20480_Mm7_R1D.data',
-				preprocessed_y_file='preprocessedSamples_y_samples_allGuitar_20480_Mm7_R1D.data'):
+				preprocessed_X_file='dataset/preprocessedSamples_cut_X_samples_allGuitar_20480_Mm7_R1D.data',
+				preprocessed_y_file='dataset/preprocessedSamples_cut_y_samples_allGuitar_20480_Mm7_R1D.data'):
 
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
