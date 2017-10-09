@@ -1,4 +1,5 @@
-from .tensorflow_models import CNNClassifier, DNNClassifier
+from tensorflow_models import CNNClassifier, DNNClassifier
+import numpy as np
 
 class GridSearchCNN(object):
     def __init__(self, params, k_fold=5):
@@ -16,7 +17,7 @@ class GridSearchCNN(object):
         self.best_params = None
         self.k_fold = k_fold
 
-    def fit(self, X, y, X_valid=None, y_valid=None):
+    def fit(self, X_train, y_train, X_test, y_test, X_valid=None, y_valid=None):
 
         scores = []
         for n_hidden_layers in self.n_hidden_layers:
@@ -45,19 +46,6 @@ class GridSearchCNN(object):
                                                             "conv2: %s ." % (conv2)
                                                         )
 
-                                                    trainRange = int(len(X) * 0.85)
-                                                    testRange = int(len(X) * 0.15)
-
-                                                    X_train = X[:trainRange]
-                                                    y_train = y[:trainRange]
-
-                                                    X_test = X[:testRange]
-                                                    y_test = y[:testRange]
-
-                                                    print("shapes:")
-                                                    print(X_train.shape, X_test.shape)
-                                                    print(y_train.shape, y_test.shape)
-
                                                     cnn = CNNClassifier(n_hidden_layers=n_hidden_layers, n_neurons=n_neurons, optimizer_class=optimizer_class,
                                                         learning_rate=learning_rate, activation=activation, conv1=conv1, conv2=conv2, architecture=architecture)
 
@@ -66,6 +54,12 @@ class GridSearchCNN(object):
                                                     del cnn
 
                                                 else:
+                                                    try:
+                                                        X = np.vstack([X_train, X_test])
+                                                        y = np.append(y_train, y_test)
+                                                    except:
+                                                        X = X_train
+                                                        y = y_train
                                                     k_fold_samples = int(len(X) / folds)
                                                     print("Trining CNN with parameters: " + 
                                                             "n_hidden_layers: %d, " % (n_hidden_layers) +
@@ -124,9 +118,14 @@ class GridSearchCNN(object):
                                                 print(scores[-1])
                                                 print("******************************************")
 
-                                                with open("search_results/gridSearchDNN_results.txt","a") as f:
-                                                    f.write(str(score) + "\n")
+                                                this_dir = os.path.dirname(os.path.abspath(__file__))
+                                                search_dir = this_dir + '/search_results'
+                                                if os.path.isdir(search_dir) == False:
+                                                    os.makedirs(search_dir)
 
+                                                search_file = search_dir + '/gridSearchCNN_results.txt'
+                                                with open(search_file,"a") as f:
+                                                    f.write(str(score) + "\n")
         best_score = 0
         for score in scores:
             accuracy = score['accuracy_rate']
@@ -148,7 +147,7 @@ class GridSearchDNN(object):
         self.best_params = None
         self.k_fold = k_fold
 
-    def fit(self, X, y, X_valid=None, y_valid=None):
+    def fit(self, X_train, y_train, X_test, y_test, X_valid=None, y_valid=None):
 
         scores = []
         for n_hidden_layers in self.n_hidden_layers:
@@ -160,6 +159,12 @@ class GridSearchDNN(object):
                                 for dropout_rate in self.dropout_rate:
                                     accuracy_rate = 0
                                     folds = self.k_fold
+                                    try:
+                                        X = np.vstack([X_train, X_test])
+                                        y = np.append(y_train, y_test)
+                                    except:
+                                        X = X_train
+                                        y = y_train
                                     k_fold_samples = int(len(X) / folds)
                                     for k in range(folds):
                                         print("Trining DNN with parameters: " + 
@@ -213,7 +218,13 @@ class GridSearchDNN(object):
                                     print(scores[-1])
                                     print("******************************************")
 
-                                    with open("search_results/gridSearchDNN_results.txt","a") as f:
+                                    this_dir = os.path.dirname(os.path.abspath(__file__))
+                                    search_dir = this_dir + '/search_results'
+                                    if os.path.isdir(search_dir) == False:
+                                        os.makedirs(search_dir)
+
+                                    search_file = search_dir + '/gridSearchDNN_results.txt'
+                                    with open(search_file,"a") as f:
                                         f.write(str(score) + "\n")
 
         best_score = 0

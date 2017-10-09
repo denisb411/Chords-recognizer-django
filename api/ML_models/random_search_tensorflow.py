@@ -1,4 +1,7 @@
-from .tensorflow_models import CNNClassifier, DNNClassifier
+from tensorflow_models import CNNClassifier, DNNClassifier
+import numpy as np
+import random
+import os
 
 class RandomSearchCNN(object):
     def __init__(self, params, k_fold=5, num_random_combinations=100):
@@ -34,7 +37,7 @@ class RandomSearchCNN(object):
 
         self.combinations = combinations
 
-    def fit(self, X_train, y_train, X_test=None, y_test=None, X_valid=None, y_valid=None):
+    def fit(self, X_train, y_train, X_test=None, y_test=None, X_valid=None, y_valid=None, log_name='randomSearchCNN_results.txt'):
 
         scores = []
         print("testing", len(self.combinations), "combinations.")
@@ -80,12 +83,14 @@ class RandomSearchCNN(object):
                 del cnn
 
             else:
-                k_fold_samples = int(len(X) / folds)
                 try:
-                    X = np.append(X_train, X_test)
+                    X = np.vstack([X_train, X_test])
                     y = np.append(y_train, y_test)
+                    print('here')
                 except:
-                    pass
+                    X = X_train
+                    y = y_train
+                k_fold_samples = int(len(X) / folds)
                 print("Trining CNN with parameters: " + 
                             "n_hidden_layers: %d, " % (self.params['n_hidden_layers'][combination[0]]) +
                             "n_neurons: %d, " % (self.params['n_neurons'][combination[1]]) +
@@ -156,8 +161,15 @@ class RandomSearchCNN(object):
             print(score)
             print("******************************************")
 
-            with open("search_results/randomSearchCNN_results.txt","a") as f:
+            this_dir = os.path.dirname(os.path.abspath(__file__))
+            search_dir = this_dir + '/search_results'
+            if os.path.isdir(search_dir) == False:
+                os.makedirs(search_dir)
+
+            search_file = search_dir + '/' + log_name
+            with open(search_file,"a") as f:
                 f.write(str(score) + "\n")
+
 
         best_score = 0
         for score in scores:
@@ -201,7 +213,7 @@ class RandomSearchDNN(object):
         self.combinations = combinations
 
 
-    def fit(self, X, y, X_valid=None, y_valid=None):
+    def fit(self, X_train, y_train, X_test, y_test, X_valid=None, y_valid=None, log_name='randomSearchDNN_results.txt'):
 
         scores = []
         for combination in self.combinations:
@@ -226,33 +238,20 @@ class RandomSearchDNN(object):
                 batch_size = self.params['batch_size'][combination[5]]
                 activation = self.params['activation'][combination[6]]
 
-                trainRange = int(len(X) * 0.85)
-                testRange = int(len(X) * 0.15)
-
-                X_train = X[:trainRange]
-                y_train = y[:trainRange]
-
-                X_test = X[:testRange]
-                y_test = y[:testRange]
-
-                print("shapes:")
-                print(X_train.shape, X_test.shape)
-                print(y_train.shape, y_test.shape)
-
                 dnn = DNNClassifier(n_hidden_layers=n_hidden_layers, n_neurons=n_neurons, optimizer_class=optimizer_class,
                                     learning_rate=learning_rate, activation=activation, batch_size=batch_size, dropout_rate=dropout_rate)
 
-                dnn.fit(X=X_train, y=y_train, X_valid=X_valid, y_valid=y_valid)
+                dnn.fit(X_train, y_train, X_valid=X_valid, y_valid=y_valid)
                 accuracy_rate += dnn.accuracy_score(X_test, y_test)
                 del dnn
 
             else:
-                k_fold_samples = int(len(X) / folds)
                 try:
-                    X = np.append(X_train, X_test)
+                    X = np.vstack([X_train, X_test])
                     y = np.append(y_train, y_test)
                 except:
                     pass
+                k_fold_samples = int(len(X) / folds)
                 print("Trining DNN with parameters: " + 
                         "n_hidden_layers: %d, " % (self.params['n_hidden_layers'][combination[0]]) +
                         "n_neurons: %d, " % (self.params['n_neurons'][combination[1]]) +
@@ -293,7 +292,7 @@ class RandomSearchDNN(object):
                     dnn = DNNClassifier(n_hidden_layers=n_hidden_layers, n_neurons=n_neurons, optimizer_class=optimizer_class,
                                         learning_rate=learning_rate, activation=activation, batch_size=batch_size, dropout_rate=dropout_rate)
 
-                    dnn.fit(X=X_train_step, y=y_train_step, X_valid=X_valid, y_valid=y_valid)
+                    dnn.fit(X_train_step, y_train_step, X_valid=X_valid, y_valid=y_valid)
                     accuracy_rate += dnn.accuracy_score(X_test_step, y_test_step)
                     del dnn
 
@@ -312,7 +311,13 @@ class RandomSearchDNN(object):
             print(scores[-1])
             print("******************************************")
 
-            with open("search_results/randomSearchDNN_results.txt","a") as f:
+            this_dir = os.path.dirname(os.path.abspath(__file__))
+            search_dir = this_dir + '/search_results'
+            if os.path.isdir(search_dir) == False:
+                os.makedirs(search_dir)
+
+            search_file = search_dir + '/' + log_name
+            with open(search_file,"a") as f:
                 f.write(str(score) + "\n")
 
         best_score = 0

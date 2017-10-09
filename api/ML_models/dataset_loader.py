@@ -7,7 +7,7 @@ import librosa
 
 class DatasetLoader(object):
 	def __init__(self, preprocess_type='chroma_stft', window='hamming',
-				 cut_freq_above = 1000, win_length=128, n_fft=20480, hop_length=258):
+				 cut_freq_above = 500, win_length=128, n_fft=20480, hop_length=258):
 
 		self.__preprocess_type = preprocess_type
 		self.__window = window
@@ -20,8 +20,8 @@ class DatasetLoader(object):
 	def load_dataset(self, file='main_dataset.csv', csv=False,
 				train_percentage=0.8, validation_percentage=0.1,
 				test_percentage=0.1,
-				preprocessed_X_file='dataset/preprocessedSamples_cut_X_samples_allGuitar_20480_Mm7_R1D.data',
-				preprocessed_y_file='dataset/preprocessedSamples_cut_y_samples_allGuitar_20480_Mm7_R1D.data'):
+				preprocessed_X_file='dataset/preprocessedSamples_cut_500_X_samples_allGuitar_20480_Mm7_R1D.data',
+				preprocessed_y_file='dataset/preprocessedSamples_cut_500_y_samples_allGuitar_20480_Mm7_R1D.data'):
 
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
@@ -40,8 +40,7 @@ class DatasetLoader(object):
 			try:
 				data_frame = pd.read_csv(dataset_file)
 			except:
-				print('An exception occurred when trying to load the \
-					dataset. Loading the buffer instead.')
+				print('An exception occurred when trying to load the dataset. Loading the buffer instead.')
 				data_frame = pd.read_csv('api//ML_models//dataset//bufferData.csv')
 
 			self.__state = 'PREPROCESSING'
@@ -106,7 +105,7 @@ class DatasetLoader(object):
 			for i in range(len(X)):
 				sample = np.fft.rfft(X_load[i])
 				for ii in range(len(sample)):
-					if ii < self.__cut_freq_above: #ignore frequencies greater than 2kHz
+					if ii < self.__cut_freq_above: #ignore frequencies greater than self.__cut_freq_above
 						X_fft_new[ii] = sample[ii]
 						
 				sample = np.fft.ifft(X_fft_new)
