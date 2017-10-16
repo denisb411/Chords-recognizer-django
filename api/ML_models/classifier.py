@@ -7,11 +7,11 @@ from sklearn.exceptions import NotFittedError
 from .tools import leaky_relu
 
 class Classifier(object):
-	def __init__(self, model='CNN', n_hidden_layers=4, n_neurons=350, optimizer_class=tf.train.AdagradOptimizer, learning_rate=0.01, 
-				batch_size=400, activation=leaky_relu(), dropout_rate=0.3,
-				conv1={'conv1_fmaps': 16, 'conv1_ksize': 5, 'conv1_stride': 1, 'conv1_dropout': 0.1, 'conv1_activation': tf.nn.elu},
+	def __init__(self, model='CNN', n_hidden_layers=1, n_neurons=400, optimizer_class=tf.train.AdamOptimizer, learning_rate=0.05, 
+				batch_size=200, activation=leaky_relu(), dropout_rate=0.1,
+				conv1={'conv1_fmaps': 16, 'conv1_ksize': 5, 'conv1_stride': 1, 'conv1_dropout': 0.3, 'conv1_activation': tf.nn.relu},
 				conv2={'conv2_fmaps': 16, 'conv2_ksize': 5, 'conv2_stride': 1, 'conv2_dropout': 0.3, 'conv2_activation': tf.nn.relu},
-				architecture=3, trained_model_file='saved-model-final.ckpt'):
+				architecture=1, trained_model_file='saved-model-final.ckpt'):
 		self.__state = 'NOT_TRAINED'
 		self.__trained_model_file = trained_model_file
 

@@ -127,6 +127,7 @@ class DatasetLoader(object):
 
 			processed_X = np.zeros((len(X),12,80,1), dtype=np.float)
 			processed_y = np.zeros(len(y), dtype=np.float)
+			X_fft_new = np.zeros(20480)
 
 			for i in range(len(X)):
 				sample = np.fft.rfft(X_load[i])

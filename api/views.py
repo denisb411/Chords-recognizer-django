@@ -10,9 +10,9 @@ from rest_framework.parsers import JSONParser
 
 import numpy as np
 import os
-import json
 import csv
 import librosa
+import ujson as json
 
 from .ML_models.initial_train import classifier
 from .ML_models.tools import preprocess_sample
@@ -74,7 +74,9 @@ def predict_data(request):
 		print('Predicting data')
 		data = json.loads(request.body.decode('utf-8'))
 		sample = data['sample']
+		print('1')
 		preprocessed_sample = preprocess_sample(sample)
+		print('2')
 		predicted_class = int(round(classifier.predict(preprocessed_sample)))
 		predicted_class_dic = {'predicted_class' : predicted_class}
 		print(predicted_class_dic)

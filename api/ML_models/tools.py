@@ -10,6 +10,9 @@ def leaky_relu(alpha=0.01):
 def preprocess_sample(sample):
 	""" This preprocessing has to be the same as the training! """
 
+	X_fft_new = np.zeros(20480)
+
+	sample = np.fft.rfft(sample)
 	for ii in range(len(sample)):
 		if ii < 500: #ignore frequencies greater than 1kHz
 			X_fft_new[ii] = sample[ii]
