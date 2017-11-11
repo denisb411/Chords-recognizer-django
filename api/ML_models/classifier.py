@@ -1,17 +1,19 @@
 import tensorflow as tf
 
 import os
+import time
 
-from .tensorflow_models import CNNClassifier, DNNClassifier
+from tensorflow_models import CNNClassifier, DNNClassifier
+from sklearn_models import BestSKLearnModel
 from sklearn.exceptions import NotFittedError
-from .tools import leaky_relu
+from tools import leaky_relu
 
 class Classifier(object):
 	def __init__(self, model='CNN', n_hidden_layers=1, n_neurons=400, optimizer_class=tf.train.AdamOptimizer, learning_rate=0.05, 
 				batch_size=200, activation=leaky_relu(), dropout_rate=0.1,
 				conv1={'conv1_fmaps': 16, 'conv1_ksize': 5, 'conv1_stride': 1, 'conv1_dropout': 0.3, 'conv1_activation': tf.nn.relu},
 				conv2={'conv2_fmaps': 16, 'conv2_ksize': 5, 'conv2_stride': 1, 'conv2_dropout': 0.3, 'conv2_activation': tf.nn.relu},
-				architecture=1, trained_model_file='saved-model-final.ckpt'):
+				architecture=1, trained_model_file=''):
 		self.__state = 'NOT_TRAINED'
 		self.__trained_model_file = trained_model_file
 
@@ -28,12 +30,13 @@ class Classifier(object):
 			print("Invalid model name")
 			raise ValueError('Invalid model name')
 
-	def train(self, X_train, y_train, X_valid, y_valid,
-				X_test, y_test):
+	def train(self, X_train, y_train, X_test, y_test, 
+				X_valid=None, y_valid=None,):
+		time_initial = time.time()
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
 		models_path = dir_path + '/saved_models'
-		if self.__trained_model_file == None:
+		if self.__trained_model_file == '':
 			self.__advance_state()
 			self.__model.fit(X_train, y_train, X_valid=X_valid, y_valid=y_valid)
 			self.__trained_model_file = models_path + '/saved-model-final.ckpt'
@@ -47,6 +50,8 @@ class Classifier(object):
 				raise ValueError('Trained model file doesnt exists')
 		self.__score = self.__model.accuracy_score(X_test, y_test)	
 		self.__advance_state()
+		time_final = time.time()
+		print ("This training took %.2f seconds" % (time_final - time_initial))
 
 	def __check_state(self):
 		if self.__state == 'NOT_TRAINED':

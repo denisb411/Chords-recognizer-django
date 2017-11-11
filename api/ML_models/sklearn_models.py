@@ -4,6 +4,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import SGDClassifier
+from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.cross_validation import cross_val_score
 from sklearn.linear_model import LogisticRegression
@@ -12,6 +13,9 @@ from sklearn.multiclass import OneVsOneClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
 from sklearn.exceptions import NotFittedError
+
+import numpy as np
+
 
 
 class BestSKLearnModel(object):
@@ -48,10 +52,10 @@ class BestSKLearnModel(object):
 		elif self.__state == 'TRAINING':
 			raise NotFittedError('Model is in training process')	
 
-	def fit(self, X_train, y_train):
+	def fit(self, X_train, y_train, X_valid=None, y_valid=None):
 
 		self.__advance_state()
-		self.__scores = {}
+		self.__scores = []
 		
 		self.__scores.append(self.__fit_and_predict(self.__modelLogisticRegression, 
 													X_train, y_train))
@@ -89,28 +93,35 @@ class BestSKLearnModel(object):
 			if accuracy > best_accuracy:
 				best_accuracy = accuracy
 				self.__best_model = score['model']
-		self.__best_model.fit()
+		self.__best_model.fit(X=X_train, y=y_train)
 		self.__advance_state()
+		print(self.__scores)
+
+	def save(self, x):
+		pass #do nothing. No implementation
 
 	@property
-	class scores(self):
+	def scores(self):
 		self.__check_state()
 		return self.__scores
 
-	def __fit_and_predict(self, model, X_train, y_train)
+	def __fit_and_predict(self, model, X_train, y_train):
 		k = 5
+		result = {}
+		print("Training model " + str(model) + " using cross validation with " +
+			str(k) + " folds")
 		#Evaluate a score by cross-validation
-		scores = cross_val_score(model, X_train, y_train, cv = k, n_jobs = 4)
+		scores = cross_val_score(model, X_train, y_train, cv=k, n_jobs=4)
 		accuracy = np.mean(scores) #calculates the average
 		result['model'] = model
 		result['accuracy'] = accuracy
-
+		print(result)
 		return result
 
 	def predict(self, X):
 		self.__check_state()
 		return self.__best_model.predict(X)
 
-    def accuracy_score(self, X_test, y_test):
-    	y_pred = self.__best_model.predict(X_test)
+	def accuracy_score(self, X_test, y_test):
+		y_pred = self.__best_model.predict(X_test)
 		return accuracy_score(y_test, y_pred)

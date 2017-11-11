@@ -107,6 +107,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
         n_inputs = X.shape[1]
         self.classes_ = np.unique(y)
         n_outputs = len(self.classes_)
+        print(n_outputs)
         
         # Translate the labels vector to a vector of sorted class indices, containing
         # integers from 0 to n_outputs - 1.

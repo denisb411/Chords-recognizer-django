@@ -40,7 +40,7 @@ class RandomSearchCNN(object):
     def fit(self, X_train, y_train, X_test=None, y_test=None, X_valid=None, y_valid=None, log_name='randomSearchCNN_results.txt'):
 
         scores = []
-        print("testing", len(self.combinations), "combinations.")
+        print("testing", len(self.combinations), "combinations using kfold =", self.k_fold, ".")
         for combination in self.combinations:
             accuracy_rate = 0
             folds = self.k_fold

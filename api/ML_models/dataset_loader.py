@@ -1,13 +1,15 @@
 from sklearn.utils import shuffle
 import numpy as np
 import os
-
+import pandas as pd
 import librosa
+import time
 
 
 class DatasetLoader(object):
-	def __init__(self, preprocess_type='chroma_stft', window='hamming',
-				 cut_freq_above = 500, win_length=128, n_fft=20480, hop_length=258):
+	def __init__(self, preprocess_type='chroma_stft', window='hamming', decibels=False,
+				 cut_freq_above = None, win_length=128, n_fft=20480, hop_length=258,
+				 dataset_starts_at_label = 0):
 
 		self.__preprocess_type = preprocess_type
 		self.__window = window
@@ -15,21 +17,25 @@ class DatasetLoader(object):
 		self.__n_fft = n_fft
 		self.__hop_lenght = hop_length
 		self.__cut_freq_above = cut_freq_above
+		self.__decibels = decibels
+		self.__dataset_starts_at_label = dataset_starts_at_label
 
 
 	def load_dataset(self, file='main_dataset.csv', csv=False,
 				train_percentage=0.8, validation_percentage=0.1,
 				test_percentage=0.1,
-				preprocessed_X_file='dataset/preprocessedSamples_cut_500_X_samples_allGuitar_20480_Mm7_R1D.data',
-				preprocessed_y_file='dataset/preprocessedSamples_cut_500_y_samples_allGuitar_20480_Mm7_R1D.data'):
+				preprocessed_X_file='',
+				preprocessed_y_file=''):
+
+		time_initial = time.time()
 
 		path = os.path.abspath(__file__)
 		dir_path = os.path.dirname(path)
 		dataset_file = dir_path + '/dataset/' + file
-		self.__preprocessed_X_file = dir_path + '/' + preprocessed_X_file
-		self.__preprocessed_y_file = dir_path + '/' + preprocessed_y_file
+		self.__preprocessed_X_file = dir_path + '/dataset/' + preprocessed_X_file
+		self.__preprocessed_y_file = dir_path + '/dataset/' + preprocessed_y_file
+
 		print(self.__preprocessed_X_file)
-		print(self.__preprocessed_y_file)
 
 		if os.path.isfile(self.__preprocessed_X_file) and os.path.isfile(self.__preprocessed_y_file) and csv==False:
 
@@ -41,7 +47,7 @@ class DatasetLoader(object):
 				data_frame = pd.read_csv(dataset_file)
 			except:
 				print('An exception occurred when trying to load the dataset. Loading the buffer instead.')
-				data_frame = pd.read_csv('api//ML_models//dataset//bufferData.csv')
+				data_frame = pd.read_csv('api/ML_models/dataset/bufferData.csv')
 
 			self.__state = 'PREPROCESSING'
 			processed_X, processed_y = self.__preprocess_dataset(data_frame)	
@@ -56,6 +62,11 @@ class DatasetLoader(object):
 						test_percentage=test_percentage)
 
 		self.__state = 'DONE'
+
+		time_final = time.time()
+
+		print ("This loading/preprocessing took %.2f seconds" % (time_final - time_initial))
+
 		return self.__dataset
 
 	@property
@@ -80,19 +91,39 @@ class DatasetLoader(object):
 
 		if self.__preprocess_type == 'fft':
 			for i in range(len(data_frame)):
-				row_X, row_y = data_frame.iloc[i,:-1], data_frame.iloc[i,-1]
+				row_X = np.array(data_frame.iloc[i,:-1], dtype=np.float)
+				row_y = np.array(data_frame.iloc[i,-1], dtype=np.float)
 
 				row_X = self.__apply_window(row_X)
 
 				transformed_X = np.abs(np.fft.rfft(row_X)) #Fourier transform on each sample
-				processedRow = np.append(transformed_X, row_y) #Append y with X
+
+				decibels = []
+				if self.__decibels == True: #convert to decibels scale
+					for j in range(len(transformed_X)):
+						decibel = transformed_X[j] * pow(10,16)
+						decibels.append(10 * np.log10(decibel))
+					transformed_X = np.array(decibels, dtype=np.float)
+
+				processedRow = np.append(transformed_X, (row_y - self.__dataset_starts_at_label)) #Append y with X
 				try:
 					processed_dataset = np.vstack([processed_dataset,processedRow])
 				except:
 					processed_dataset = np.array(processedRow,dtype=float)
 
+				if i % 1000 == 0:
+					print(i, "processed rows")
+
 			processed_X = processed_dataset[:,0:-1]
 			processed_y = processed_dataset[:,-1]
+
+			path = os.path.abspath(__file__)
+			dir_path = os.path.dirname(path)
+			preprocessed_X_file = dir_path + '/dataset/' + 'preprocessedSamples_X_samples_nylonGuitar_1024_Mm7_R03.data'
+			preprocessed_y_file = dir_path + '/dataset/' + 'preprocessedSamples_y_samples_nylonGuitar_1024_Mm7_R03.data'
+
+			processed_X.dump(preprocessed_X_file)
+			processed_y.dump(preprocessed_y_file)
 
 			return processed_X, processed_y
 		elif self.__preprocess_type == 'stft':
@@ -103,12 +134,13 @@ class DatasetLoader(object):
 			processed_y = np.zeros(len(y), dtype=np.float)
 
 			for i in range(len(X)):
-				sample = np.fft.rfft(X_load[i])
-				for ii in range(len(sample)):
-					if ii < self.__cut_freq_above: #ignore frequencies greater than self.__cut_freq_above
-						X_fft_new[ii] = sample[ii]
-						
-				sample = np.fft.ifft(X_fft_new)
+				if self.__cut_freq_above is not None:
+					sample = np.fft.rfft(X[i])
+					for ii in range(len(sample)):
+						if ii < self.__cut_freq_above: #ignore frequencies greater than self.__cut_freq_above
+							X_fft_new[ii] = sample[ii]
+							
+					X[i] = np.fft.ifft(X_fft_new)
 				row_X = librosa.core.stft(y=X[i], n_fft=self.__n_fft, 
 										 win_length=self.__win_length,
 										 window=self.__window, center=True,
@@ -130,12 +162,13 @@ class DatasetLoader(object):
 			X_fft_new = np.zeros(20480)
 
 			for i in range(len(X)):
-				sample = np.fft.rfft(X_load[i])
-				for ii in range(len(sample)):
-					if ii < self.__cut_freq_above: #ignore frequencies greater than 2kHz
-						X_fft_new[ii] = sample[ii]
-						
-				sample = np.fft.ifft(X_fft_new)
+				if self.__cut_freq_above is not None:
+					sample = np.fft.rfft(X[i])
+					for ii in range(len(sample)):
+						if ii < self.__cut_freq_above: #ignore frequencies greater than self.__cut_freq_above
+							X_fft_new[ii] = sample[ii]
+							
+					X[i] = np.fft.ifft(X_fft_new)
 				row_X = librosa.feature.chroma_stft(y=X[i],
 											sr=44100, n_fft=self.__n_fft,
 											hop_length=self.__hop_lenght)
@@ -152,11 +185,14 @@ class DatasetLoader(object):
 
 	def __apply_window(self, X):
 		if self.__window == 'hamming':
-			X = np.hamming(X)
+			window = np.hamming(len(X))
+			X = X * window
 		elif self.__window == 'hanning':
-			X = np.hanning(X)
+			window = np.hanning(len(X))
+			X = X * window
 		elif self.__window == 'blackman':
-			X = np.blackman(X)
+			window = np.blackman(len(X))
+			X = X * window
 
 		return X
 
@@ -177,6 +213,9 @@ class Dataset(object):
 			validRange = int(len(X) * (validation_percentage + train_percentage))
 			testRange = int(len(X) * train_percentage)
 
+			self.__X = np.array(X, dtype=np.float)
+			self.__y = np.array(y, dtype=np.float)
+
 			self.__X_train = np.array(X[:trainRange], dtype=np.float)
 			self.__y_train = np.array(y[:trainRange], dtype=np.float)
 
@@ -186,8 +225,15 @@ class Dataset(object):
 			self.__X_test = np.array(X[testRange:], dtype=np.float)
 			self.__y_test = np.array(y[testRange:], dtype=np.float)
 
-			self.__X_train_valid = np.array(X[trainRange:testRange], dtype=np.float)
-			self.__y_train_valid = np.array(y[trainRange:testRange], dtype=np.float)
+			self.__X_test_valid = np.array(X[trainRange:], dtype=np.float)
+			self.__y_test_valid = np.array(y[trainRange:], dtype=np.float)
+
+	@property
+	def X(self):
+		return self.__X
+	@property
+	def y(self):
+		return self.__y
 
 	@property
 	def X_train(self):
@@ -211,11 +257,11 @@ class Dataset(object):
 		return self.__y_test
 
 	@property
-	def X_train_valid(self):
-		return self.__X_train_valid
+	def X_test_valid(self):
+		return self.__X_test_valid
 	@property
-	def y_train_valid(self):
-		return self.__y_train_valid
+	def y_test_valid(self):
+		return self.__y_test_valid
 
 
 
